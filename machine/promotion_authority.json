@@ -1,0 +1,11 @@
+{
+  "schema": "glaciereq.promotion-authority-grant.v1",
+  "repository": "GlacierEQ/cursor-patch-intent-twin",
+  "source_sha": "53c17fce60f6517746f9c5c81f6dbdc93f21d9b421790f6ef67d422efad68ddf",
+  "proof_receipt_digest": "45065d68f70973f005a4cb81c4bb57c9a2409da86e5ba8a2b42c0cd04f299dcd",
+  "not_after": 1788948651.351177,
+  "mac": "ce69f8df09e1c83421735d05717b4ad5b1b983a5bb9a456e9be3665e4842f654",
+  "issuer": "local_operator_promotion_authority",
+  "verified": true,
+  "secret_ref": "src/promotion_authority.py::LOCAL_OPERATOR_SECRET"
+}

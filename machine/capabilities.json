@@ -1,0 +1,12 @@
+{
+  "schema": "glaciereq.repo-capabilities.v1",
+  "repository": "GlacierEQ/cursor-patch-intent-twin",
+  "capabilities": [
+    {
+      "id": "patch-intent-twin",
+      "name": "Patch Intent Twin",
+      "status": "SCAFFOLD",
+      "module": "src/patch_intent_twin.py"
+    }
+  ]
+}
