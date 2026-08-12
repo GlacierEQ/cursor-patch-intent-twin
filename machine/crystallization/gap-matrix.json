@@ -1,0 +1,30 @@
+{
+  "schema": "glaciereq.crystallization-gaps.v1",
+  "gaps": [
+    {
+      "capability_id": "real_git_patch_adapter",
+      "state": "MISSING",
+      "required_work": "Build a git adapter that derives changed-file status, numstat, changed symbols, and exact source/ref provenance from a real worktree or commit range, with adversarial tests for renames, deletes, binary files, and malformed refs."
+    },
+    {
+      "capability_id": "intent_recovery_adapter",
+      "state": "MISSING",
+      "required_work": "Build a provenance-preserving adapter that converts issue/PR requirements and repository constraints into the intent contract, retaining source links and refusing ambiguous material requirements instead of guessing."
+    },
+    {
+      "capability_id": "continuous_patch_monitor",
+      "state": "MISSING",
+      "required_work": "Add an incremental watcher/event interface that re-evaluates drift after each patch delta and emits deterministic before/after receipts usable by an agent loop."
+    },
+    {
+      "capability_id": "real_test_run_adapter",
+      "state": "MISSING",
+      "required_work": "Execute required tests from the repository environment, bind exact command/exit/output digests to the observed patch, and prevent caller-supplied test status from satisfying the intent contract."
+    },
+    {
+      "capability_id": "review_outcome_evaluation",
+      "state": "MISSING",
+      "required_work": "Create an independently labeled aligned/misaligned patch corpus and evaluation harness measuring false allows, false refuses, drift-detection timing, and review usefulness."
+    }
+  ]
+}
