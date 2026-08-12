@@ -107,9 +107,8 @@ def test_intent_recovery_refuses_when_no_material_requirement_is_explicit() -> N
         )
 
 
-def test_incremental_monitor_surfaces_new_violation_and_does_not_reexecute_unchanged_patch(tmp_path: Path) -> None:
+def test_incremental_monitor_surfaces_new_violation_and_caches_only_identical_evaluation_input(tmp_path: Path) -> None:
     repo, base = make_repo(tmp_path)
-    # First change is aligned.
     (repo / "src" / "engine.py").write_text(
         "def apply_patch(value):\n    return value + 1\n",
         encoding="utf-8",
@@ -120,14 +119,14 @@ def test_incremental_monitor_surfaces_new_violation_and_does_not_reexecute_uncha
 
     state = tmp_path / "monitor.json"
     monitor = PatchIntentMonitor(state)
-    test_defs = [{"name": "unit", "argv": [sys.executable, "-c", "raise SystemExit(0)"]}]
+    passing_tests = [{"name": "unit", "argv": [sys.executable, "-c", "raise SystemExit(0)"]}]
     first = monitor.check(
         repo=repo,
         base_ref=base,
         head_ref=aligned_head,
         subject_id="task",
         intent=recovered_contract(),
-        tests=test_defs,
+        tests=passing_tests,
         budget=0.0,
     )
     assert first.changed is True
@@ -140,14 +139,27 @@ def test_incremental_monitor_surfaces_new_violation_and_does_not_reexecute_uncha
         head_ref=aligned_head,
         subject_id="task",
         intent=recovered_contract(),
-        tests=[{"name": "unit", "argv": [sys.executable, "-c", "raise SystemExit(99)"]}],
+        tests=passing_tests,
         budget=0.0,
     )
     assert unchanged.changed is False
     assert unchanged.sequence == 1
     assert unchanged.decision == "ALLOW"
 
-    # Next change crosses a forbidden surface; monitor emits the transition.
+    changed_test_plan = monitor.check(
+        repo=repo,
+        base_ref=base,
+        head_ref=aligned_head,
+        subject_id="task",
+        intent=recovered_contract(),
+        tests=[{"name": "unit", "argv": [sys.executable, "-c", "raise SystemExit(99)"]}],
+        budget=0.0,
+    )
+    assert changed_test_plan.changed is True
+    assert changed_test_plan.sequence == 2
+    assert changed_test_plan.decision == "REFUSE"
+    assert "required_test_failed:unit" in changed_test_plan.introduced_reasons
+
     (repo / "infra" / "prod").mkdir(parents=True)
     (repo / "infra" / "prod" / "main.tf").write_text("resource = true\n", encoding="utf-8")
     git(repo, "add", ".")
@@ -159,14 +171,34 @@ def test_incremental_monitor_surfaces_new_violation_and_does_not_reexecute_uncha
         head_ref=forbidden_head,
         subject_id="task",
         intent=recovered_contract(),
-        tests=test_defs,
+        tests=passing_tests,
         budget=0.0,
     )
     assert second.changed is True
-    assert second.sequence == 2
+    assert second.sequence == 3
     assert second.decision == "REFUSE"
     assert "forbidden_path_touched:infra/prod/main.tf" in second.introduced_reasons
+    assert "required_test_failed:unit" in second.cleared_reasons
     assert len(second.transition_digest) == 64
+
+
+def test_monitor_re_evaluates_unchanged_patch_when_intent_changes(tmp_path: Path) -> None:
+    repo, base = make_repo(tmp_path)
+    (repo / "src" / "engine.py").write_text("def apply_patch(value):\n    return value + 1\n", encoding="utf-8")
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "aligned")
+    head = git(repo, "rev-parse", "HEAD")
+    monitor = PatchIntentMonitor(tmp_path / "state.json")
+    tests = [{"name": "unit", "argv": [sys.executable, "-c", "raise SystemExit(0)"]}]
+    first = monitor.check(repo=repo, base_ref=base, head_ref=head, subject_id="task", intent=recovered_contract(), tests=tests)
+    changed_intent = dict(recovered_contract())
+    changed_intent["forbidden_paths"] = ["src/engine.py"]
+    second = monitor.check(repo=repo, base_ref=base, head_ref=head, subject_id="task", intent=changed_intent, tests=tests)
+    assert first.decision == "ALLOW"
+    assert second.changed is True
+    assert second.sequence == 2
+    assert second.decision == "REFUSE"
+    assert "forbidden_path_touched:src/engine.py" in second.introduced_reasons
 
 
 def test_labeled_review_benchmark_has_zero_false_allows_and_full_fixture_accuracy() -> None:
