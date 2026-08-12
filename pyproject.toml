@@ -1,9 +1,20 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "cursor-patch-intent-twin"
-version = "0.0.1"
-description = "Scaffold: Patch Intent Twin (independent Cursor / Anysphere lens)"
+version = "0.1.0"
+description = "Machine-readable patch intent drift engine with fail-closed review gates"
 requires-python = ">=3.11"
 dependencies = []
+
+[project.scripts]
+patch-intent-twin = "patch_intent_cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = ["patch_intent_twin", "patch_intent_cli", "promotion_authority"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
