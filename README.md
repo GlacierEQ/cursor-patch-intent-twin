@@ -1,50 +1,104 @@
 # Patch Intent Twin
 
-Independent GlacierEQ portfolio exhibit aligned to **Cursor / Anysphere** operating themes.
+Independent GlacierEQ portfolio implementation aligned to public Cursor / Anysphere operating themes. This repository is not affiliated with or endorsed by Cursor or Anysphere.
 
-> **Not affiliated.** This repository is not affiliated with, endorsed by, employed by, or deployed at Cursor / Anysphere.
-> No proprietary access, production deployment, customer impact, or company partnership is claimed.
+## Purpose
 
-## Bottleneck (GlacierEQ hypothesis)
+Keep an agent-generated patch aligned with the change a developer actually requested.
 
-giving coding agents increasing repository/tool authority without sacrificing reviewability, intent alignment, or developer trust
+The twin compiles a machine-readable change contract and continuously compares an evolving patch against that intent. It can consume a normalized patch description or parse a real unified Git diff.
 
-**Brick wall:** Silent success without receipts; affiliation or production claims without evidence.
+## Capabilities
 
-**Observed public pressure (snapshot hypothesis):** Public market pressure toward AI-enabled products and operators (hypothesis only).
+The engine enforces:
 
-## Innovation mechanism
+- required surfaces that must be touched
+- forbidden repository paths
+- explicit allowed-path scope
+- maximum changed-file count
+- maximum total additions + deletions
+- required tests
+- required evidence receipts
+- patch cost against request and intent budgets
+- content rules for added code
+- deterministic intent and patch digests
+- expected-intent digest checks for silent scope mutation
+- deterministic patch-drift receipts between snapshots
 
-**Patch Intent Twin** — Maintain a machine-readable twin of the requested change—requirements, forbidden surfaces, architectural constraints, expected tests—and continuously compare the evolving patch against that intent.
+Content rules can require or forbid specific strings in **added** code for matching paths. Removed text does not magically become a new violation.
 
-## Target roles
+## Unified diff example
 
-- Applied AI Systems Engineer
-- Forward-Deployed Engineer
+```diff
+diff --git a/src/service.py b/src/service.py
+--- a/src/service.py
++++ b/src/service.py
+@@ -1 +1,2 @@
+-old = True
++def run():
++    return "ok"
+```
 
-## Application move
+The parser records path, status, additions, deletions, hunks, added text, and removed text for each changed file.
 
-Lead with a small, inspectable Patch Intent Twin exhibit and explicit non-affiliation boundary.
+## Run it
 
-## Current scaffold state
+```bash
+python scripts/operate.py
+```
 
-This leaf is a **scaffold**: contracts, tests, and a stub mechanism exist so another engineer/AI can fill production-grade code without inventing company affiliation.
+The built-in example evaluates a real two-file unified diff against path, test, receipt, size, and content constraints.
 
-| Surface | Path |
-|---------|------|
-| Mechanism stub | `src/patch_intent_twin.py` |
-| Operate entry | `scripts/operate.py` |
-| Contract tests | `tests/` |
-| Target contract | `machine/target-contract.json` |
-| **AI fill-in brief** | **`DEV_UP_INSTRUCTIONS.md`** |
-| Issue contract | `ISSUE_CONTRACT.md` |
+Use your own files:
 
-## Non-claims
+```bash
+python scripts/operate.py --input intent.json --diff change.diff --output receipt.json
+```
 
-- No Cursor / Anysphere employment, endorsement, proprietary data, or production use
-- No customer, revenue, latency, or scale claims without separate receipts
-- Scaffold tests define **intended behavior**, not verified production excellence
+Example intent:
 
-## Next gate
+```json
+{
+  "subject_id": "patch-42",
+  "budget": 1.0,
+  "intent": {
+    "must_touch": ["src/*.py", "tests/*.py"],
+    "forbidden_paths": [".github/**", "infra/**"],
+    "allowed_paths": ["src/**", "tests/**"],
+    "required_tests": ["unit"],
+    "required_receipts": ["review"],
+    "max_changed_files": 3,
+    "max_lines_changed": 40,
+    "content_rules": [
+      {
+        "id": "entrypoint",
+        "path": "src/*.py",
+        "must_contain": ["def run"],
+        "must_not_contain": ["TODO"]
+      }
+    ]
+  },
+  "tests": {"unit": true},
+  "receipts": {"review": "review-42"}
+}
+```
 
-CURRENT_SOURCE_VALIDATION
+## Intent drift
+
+`compile_intent()` produces a stable digest. Persist it with the task and pass it later as `expected_intent_digest`. If the allowed scope, constraints, or required proof changes silently, the evaluation blocks the patch.
+
+## Patch drift
+
+`PatchIntentTwin.drift(previous_patch, current_patch)` returns added, removed, and retained changed paths plus a deterministic digest. This makes scope expansion visible across agent iterations even before final merge evaluation.
+
+## Verify behavior
+
+```bash
+python -m pytest -q
+```
+
+Tests cover unified-diff parsing, successful intent matching, forbidden and out-of-scope paths, required surfaces, tests, evidence receipts, budgets, content constraints, intent drift, duplicate paths/rules, line budgets, removed-vs-added content semantics, and patch-snapshot drift.
+
+## Boundary
+
+This is a vendor-neutral patch-intent library and CLI. It does not claim Cursor integration, proprietary agent access, or hosted deployment. It is designed to sit immediately before a merge or code-write boundary in any coding-agent control plane.

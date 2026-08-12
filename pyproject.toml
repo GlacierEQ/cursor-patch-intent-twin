@@ -1,7 +1,7 @@
 [project]
 name = "cursor-patch-intent-twin"
-version = "0.0.1"
-description = "Scaffold: Patch Intent Twin (independent Cursor / Anysphere lens)"
+version = "1.0.0"
+description = "Unified-diff intent comparison and merge-blocking patch receipts"
 requires-python = ">=3.11"
 dependencies = []
 
