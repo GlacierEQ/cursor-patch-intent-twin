@@ -1,0 +1,9 @@
+{
+  "evidence": [
+    {
+      "source_id": "issue-42",
+      "source_uri": "fixture://issue/42",
+      "text": "Required paths: src/engine.py\nAllowed paths: src/**, tests/**\nForbidden paths: infra/prod/**\nRequired tests: unit, adversarial\nRequired symbols src/engine.py: apply_patch\nMax files changed: 4\nMax deletions: 20\nAllow file deletion: false\n"
+    }
+  ]
+}

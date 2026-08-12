@@ -1,0 +1,31 @@
+{
+  "schema": "glaciereq.proof-receipt.v1",
+  "repository": "GlacierEQ/cursor-patch-intent-twin",
+  "source_sha": "53c17fce60f6517746f9c5c81f6dbdc93f21d9b421790f6ef67d422efad68ddf",
+  "proof_id": "elite-cursor-patch-intent-twin-1786356651",
+  "environment": {
+    "python": "/Users/kcbflux/.local/bin/python3.11",
+    "PYTHONPATH": "/Users/kcbflux/GlacierEQ_Swarm/job-app/repos/cursor-patch-intent-twin:/Users/kcbflux/GlacierEQ_Swarm/job-app/repos/cursor-patch-intent-twin/src",
+    "entry": "unittest"
+  },
+  "tests": [
+    "/Users/kcbflux/.local/bin/python3.11 -m unittest discover -s tests -v (x2)"
+  ],
+  "adversarial_tests": [
+    "tests/test_adversarial.py"
+  ],
+  "runtime": {
+    "operate": "scripts/operate.py (x2)",
+    "dual_run_ok": true,
+    "proof_dual_run_ok": true
+  },
+  "result": "PASS",
+  "limitations": [
+    "not production deployed",
+    "reference implementation only"
+  ],
+  "timestamp": "2026-08-10T10:10Z",
+  "artifact_hashes": {
+    "operability_receipt": "a242c927d10b2be500170ceb3a9019de865fed0069bf71284f4f226fcc6a18ed"
+  }
+}

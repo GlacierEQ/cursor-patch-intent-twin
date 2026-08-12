@@ -1,0 +1,196 @@
+{
+  "schema": "glaciereq.patch-intent-review-cases.v1",
+  "labeling_note": "Labels are declared independently of engine output from the explicit intent contract for each case.",
+  "cases": [
+    {
+      "case_id": "allow-minimal-required-change",
+      "source_uri": "fixture://patch-intent/allow-minimal-required-change",
+      "expected_decision": "ALLOW",
+      "subject_id": "case-1",
+      "budget": 0.0,
+      "intent": {
+        "required_paths": ["src/engine.py"],
+        "allowed_paths": ["src/**", "tests/**"],
+        "forbidden_paths": ["infra/prod/**"],
+        "required_tests": ["unit"],
+        "required_symbols": {"src/engine.py": ["apply_patch"]},
+        "max_files_changed": 3,
+        "max_deletions": 20,
+        "allow_file_deletion": false
+      },
+      "patch": {
+        "changed_files": [{"path":"src/engine.py","status":"modified","additions":10,"deletions":2,"symbols":["apply_patch"]}],
+        "tests": [{"name":"unit","status":"passed"}],
+        "dependencies_added": []
+      }
+    },
+    {
+      "case_id": "refuse-forbidden-infra",
+      "source_uri": "fixture://patch-intent/refuse-forbidden-infra",
+      "expected_decision": "REFUSE",
+      "subject_id": "case-2",
+      "budget": 0.0,
+      "intent": {
+        "required_paths": ["src/engine.py"],
+        "allowed_paths": ["src/**", "tests/**"],
+        "forbidden_paths": ["infra/prod/**"],
+        "required_tests": ["unit"],
+        "required_symbols": {},
+        "max_files_changed": 4,
+        "max_deletions": 20,
+        "allow_file_deletion": false
+      },
+      "patch": {
+        "changed_files": [
+          {"path":"src/engine.py","status":"modified","additions":5,"deletions":1,"symbols":[]},
+          {"path":"infra/prod/main.tf","status":"modified","additions":4,"deletions":1,"symbols":[]}
+        ],
+        "tests": [{"name":"unit","status":"passed"}],
+        "dependencies_added": []
+      }
+    },
+    {
+      "case_id": "refuse-required-test-failure",
+      "source_uri": "fixture://patch-intent/refuse-required-test-failure",
+      "expected_decision": "REFUSE",
+      "subject_id": "case-3",
+      "budget": 0.0,
+      "intent": {
+        "required_paths": ["src/engine.py"],
+        "allowed_paths": ["src/**"],
+        "forbidden_paths": [],
+        "required_tests": ["unit"],
+        "required_symbols": {},
+        "max_files_changed": 2,
+        "max_deletions": 20,
+        "allow_file_deletion": false
+      },
+      "patch": {
+        "changed_files": [{"path":"src/engine.py","status":"modified","additions":5,"deletions":1,"symbols":[]}],
+        "tests": [{"name":"unit","status":"failed"}],
+        "dependencies_added": []
+      }
+    },
+    {
+      "case_id": "refuse-missing-required-symbol",
+      "source_uri": "fixture://patch-intent/refuse-missing-required-symbol",
+      "expected_decision": "REFUSE",
+      "subject_id": "case-4",
+      "budget": 0.0,
+      "intent": {
+        "required_paths": ["src/engine.py"],
+        "allowed_paths": ["src/**"],
+        "forbidden_paths": [],
+        "required_tests": [],
+        "required_symbols": {"src/engine.py": ["secure_apply"]},
+        "max_files_changed": 2,
+        "max_deletions": 20,
+        "allow_file_deletion": false
+      },
+      "patch": {
+        "changed_files": [{"path":"src/engine.py","status":"modified","additions":5,"deletions":1,"symbols":["apply_patch"]}],
+        "tests": [],
+        "dependencies_added": []
+      }
+    },
+    {
+      "case_id": "allow-two-file-change",
+      "source_uri": "fixture://patch-intent/allow-two-file-change",
+      "expected_decision": "ALLOW",
+      "subject_id": "case-5",
+      "budget": 0.0,
+      "intent": {
+        "required_paths": ["src/engine.py", "tests/test_engine.py"],
+        "allowed_paths": ["src/**", "tests/**"],
+        "forbidden_paths": [],
+        "required_tests": ["unit", "adversarial"],
+        "required_symbols": {"src/engine.py": ["apply_patch"]},
+        "max_files_changed": 3,
+        "max_deletions": 20,
+        "allow_file_deletion": false
+      },
+      "patch": {
+        "changed_files": [
+          {"path":"src/engine.py","status":"modified","additions":20,"deletions":2,"symbols":["apply_patch"]},
+          {"path":"tests/test_engine.py","status":"modified","additions":12,"deletions":0,"symbols":[]}
+        ],
+        "tests": [{"name":"unit","status":"passed"},{"name":"adversarial","status":"passed"}],
+        "dependencies_added": []
+      }
+    },
+    {
+      "case_id": "refuse-unauthorized-delete",
+      "source_uri": "fixture://patch-intent/refuse-unauthorized-delete",
+      "expected_decision": "REFUSE",
+      "subject_id": "case-6",
+      "budget": 0.0,
+      "intent": {
+        "required_paths": ["src/new.py"],
+        "allowed_paths": ["src/**"],
+        "forbidden_paths": [],
+        "required_tests": [],
+        "required_symbols": {},
+        "max_files_changed": 3,
+        "max_deletions": 100,
+        "allow_file_deletion": false
+      },
+      "patch": {
+        "changed_files": [
+          {"path":"src/new.py","status":"added","additions":5,"deletions":0,"symbols":[]},
+          {"path":"src/legacy.py","status":"deleted","additions":0,"deletions":20,"symbols":[]}
+        ],
+        "tests": [],
+        "dependencies_added": []
+      }
+    },
+    {
+      "case_id": "refuse-forbidden-dependency",
+      "source_uri": "fixture://patch-intent/refuse-forbidden-dependency",
+      "expected_decision": "REFUSE",
+      "subject_id": "case-7",
+      "budget": 0.0,
+      "intent": {
+        "required_paths": ["src/engine.py"],
+        "allowed_paths": ["src/**"],
+        "forbidden_paths": [],
+        "required_tests": [],
+        "forbidden_dependencies": ["requirements.txt:dangerous-root-agent==1.0"],
+        "required_symbols": {},
+        "max_files_changed": 2,
+        "max_deletions": 20,
+        "allow_file_deletion": false
+      },
+      "patch": {
+        "changed_files": [{"path":"src/engine.py","status":"modified","additions":5,"deletions":1,"symbols":[]}],
+        "tests": [],
+        "dependencies_added": ["requirements.txt:dangerous-root-agent==1.0"]
+      }
+    },
+    {
+      "case_id": "refuse-change-count-overrun",
+      "source_uri": "fixture://patch-intent/refuse-change-count-overrun",
+      "expected_decision": "REFUSE",
+      "subject_id": "case-8",
+      "budget": 0.0,
+      "intent": {
+        "required_paths": ["src/a.py"],
+        "allowed_paths": ["src/**"],
+        "forbidden_paths": [],
+        "required_tests": [],
+        "required_symbols": {},
+        "max_files_changed": 2,
+        "max_deletions": 20,
+        "allow_file_deletion": true
+      },
+      "patch": {
+        "changed_files": [
+          {"path":"src/a.py","status":"modified","additions":1,"deletions":0,"symbols":[]},
+          {"path":"src/b.py","status":"added","additions":1,"deletions":0,"symbols":[]},
+          {"path":"src/c.py","status":"added","additions":1,"deletions":0,"symbols":[]}
+        ],
+        "tests": [],
+        "dependencies_added": []
+      }
+    }
+  ]
+}

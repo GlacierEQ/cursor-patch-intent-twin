@@ -1,0 +1,24 @@
+{
+  "subject_id": "example-change-001",
+  "intent": {
+    "required_paths": ["src/engine.py"],
+    "allowed_paths": ["src/**", "tests/**"],
+    "forbidden_paths": [".github/**", "infra/prod/**"],
+    "required_tests": ["unit", "adversarial"],
+    "required_symbols": {"src/engine.py": ["apply_patch"]},
+    "max_files_changed": 4,
+    "max_deletions": 50,
+    "allow_file_deletion": false
+  },
+  "patch": {
+    "changed_files": [
+      {"path":"src/engine.py","status":"modified","additions":30,"deletions":4,"symbols":["apply_patch"]},
+      {"path":"tests/test_engine.py","status":"modified","additions":20,"deletions":0,"symbols":[]}
+    ],
+    "tests": [
+      {"name":"unit","status":"passed"},
+      {"name":"adversarial","status":"passed"}
+    ],
+    "dependencies_added": []
+  }
+}
