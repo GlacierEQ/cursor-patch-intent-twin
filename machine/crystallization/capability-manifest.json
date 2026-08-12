@@ -1,0 +1,85 @@
+{
+  "schema": "glaciereq.crystallization-capabilities.v1",
+  "capabilities": [
+    {
+      "id": "intent_contract_engine",
+      "class": "core_domain_logic",
+      "description": "Represent required, allowed, and forbidden change surfaces plus tests, symbols, dependencies, deletion authority, and change budgets.",
+      "material": true,
+      "state": "WORKING",
+      "implementation_paths": ["src/patch_intent_twin.py"],
+      "verification": ["tests/test_patch_intent_twin.py"],
+      "consumer": "coding-agent review loop"
+    },
+    {
+      "id": "patch_drift_evaluator",
+      "class": "execution_engine",
+      "description": "Compare observed patch facts with the intent contract, compute alignment/drift, and fail closed on hard violations or excessive drift.",
+      "material": true,
+      "state": "WORKING",
+      "implementation_paths": ["src/patch_intent_twin.py"],
+      "verification": ["tests/test_patch_intent_twin.py", "tests/test_adversarial.py"],
+      "consumer": "review workflow"
+    },
+    {
+      "id": "installable_cli",
+      "class": "CLIs",
+      "description": "Evaluate a machine-readable patch/intent envelope from an installed command with non-zero refusal semantics.",
+      "material": true,
+      "state": "WORKING",
+      "implementation_paths": ["src/patch_intent_cli.py", "pyproject.toml"],
+      "verification": [".github/workflows/tests.yml", "examples/compliant_patch.json"],
+      "consumer": "human reviewer and CI"
+    },
+    {
+      "id": "real_git_patch_adapter",
+      "class": "integrations",
+      "description": "Derive changed files, status, additions/deletions, and changed symbols directly from a real git diff/worktree instead of requiring a prebuilt JSON observation envelope.",
+      "material": true,
+      "state": "MISSING",
+      "implementation_paths": [],
+      "verification": [],
+      "consumer": "patch drift evaluator"
+    },
+    {
+      "id": "intent_recovery_adapter",
+      "class": "data_processing",
+      "description": "Translate issue/PR requirements, forbidden surfaces, architectural constraints, and expected tests into a versioned intent contract with provenance.",
+      "material": true,
+      "state": "MISSING",
+      "implementation_paths": [],
+      "verification": [],
+      "consumer": "intent contract engine"
+    },
+    {
+      "id": "continuous_patch_monitor",
+      "class": "event_processing",
+      "description": "Re-evaluate the evolving patch as agent changes accumulate and surface drift before the final patch is produced.",
+      "material": true,
+      "state": "MISSING",
+      "implementation_paths": [],
+      "verification": [],
+      "consumer": "coding agent and reviewer"
+    },
+    {
+      "id": "real_test_run_adapter",
+      "class": "integrations",
+      "description": "Bind required-test observations to real test command execution and exact run receipts rather than caller-supplied status values.",
+      "material": true,
+      "state": "MISSING",
+      "implementation_paths": [],
+      "verification": [],
+      "consumer": "patch drift evaluator"
+    },
+    {
+      "id": "review_outcome_evaluation",
+      "class": "analytics",
+      "description": "Evaluate the system against an independently labeled corpus of aligned and misaligned patches to measure false allows, false refuses, and review utility.",
+      "material": true,
+      "state": "MISSING",
+      "implementation_paths": [],
+      "verification": [],
+      "consumer": "system maintainer"
+    }
+  ]
+}
