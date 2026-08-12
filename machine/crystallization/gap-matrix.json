@@ -1,20 +1,4 @@
 {
   "schema": "glaciereq.crystallization-gaps.v1",
-  "gaps": [
-    {
-      "capability_id": "intent_recovery_adapter",
-      "state": "MISSING",
-      "required_work": "Build a provenance-preserving adapter that converts issue/PR requirements and repository constraints into the intent contract, retaining source links and refusing ambiguous material requirements instead of guessing."
-    },
-    {
-      "capability_id": "continuous_patch_monitor",
-      "state": "MISSING",
-      "required_work": "Add an incremental watcher/event interface that re-evaluates drift after each patch delta and emits deterministic before/after receipts usable by an agent loop."
-    },
-    {
-      "capability_id": "review_outcome_evaluation",
-      "state": "MISSING",
-      "required_work": "Create an independently labeled aligned/misaligned patch corpus and evaluation harness measuring false allows, false refuses, drift-detection timing, and review usefulness."
-    }
-  ]
+  "gaps": []
 }
