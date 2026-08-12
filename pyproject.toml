@@ -4,17 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cursor-patch-intent-twin"
-version = "0.1.0"
-description = "Machine-readable patch intent drift engine with fail-closed review gates"
+version = "0.2.0"
+description = "Machine-readable patch intent drift engine with real git observation and test receipts"
 requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
 patch-intent-twin = "patch_intent_cli:main"
+patch-intent-git = "patch_intent_git_cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["patch_intent_twin", "patch_intent_cli", "promotion_authority"]
+py-modules = [
+  "patch_intent_twin",
+  "patch_intent_cli",
+  "patch_intent_git_cli",
+  "git_patch_adapter",
+  "test_run_adapter",
+  "promotion_authority"
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
