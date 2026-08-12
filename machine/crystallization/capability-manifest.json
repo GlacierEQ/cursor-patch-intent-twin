@@ -24,21 +24,21 @@
     {
       "id": "installable_cli",
       "class": "CLIs",
-      "description": "Evaluate a machine-readable patch/intent envelope from an installed command with non-zero refusal semantics.",
+      "description": "Evaluate either a supplied observation envelope or a real git commit range from installed commands with non-zero refusal semantics.",
       "material": true,
       "state": "WORKING",
-      "implementation_paths": ["src/patch_intent_cli.py", "pyproject.toml"],
-      "verification": [".github/workflows/tests.yml", "examples/compliant_patch.json"],
+      "implementation_paths": ["src/patch_intent_cli.py", "src/patch_intent_git_cli.py", "pyproject.toml"],
+      "verification": [".github/workflows/tests.yml", "tests/test_real_patch_adapters.py", "examples/compliant_patch.json"],
       "consumer": "human reviewer and CI"
     },
     {
       "id": "real_git_patch_adapter",
       "class": "integrations",
-      "description": "Derive changed files, status, additions/deletions, and changed symbols directly from a real git diff/worktree instead of requiring a prebuilt JSON observation envelope.",
+      "description": "Derive changed files, status, additions/deletions, changed symbols, dependency-manifest additions, and exact base/head provenance directly from a real git commit range.",
       "material": true,
-      "state": "MISSING",
-      "implementation_paths": [],
-      "verification": [],
+      "state": "WORKING",
+      "implementation_paths": ["src/git_patch_adapter.py", "src/patch_intent_git_cli.py"],
+      "verification": ["tests/test_real_patch_adapters.py::test_observes_exact_git_patch_and_symbols", "tests/test_real_patch_adapters.py::test_refuses_empty_commit_range"],
       "consumer": "patch drift evaluator"
     },
     {
@@ -64,11 +64,11 @@
     {
       "id": "real_test_run_adapter",
       "class": "integrations",
-      "description": "Bind required-test observations to real test command execution and exact run receipts rather than caller-supplied status values.",
+      "description": "Execute named repository test commands without a shell, bind exact argv/returncode/stdout/stderr digests into receipts, and feed only observed pass/fail state into patch evaluation.",
       "material": true,
-      "state": "MISSING",
-      "implementation_paths": [],
-      "verification": [],
+      "state": "WORKING",
+      "implementation_paths": ["src/test_run_adapter.py", "src/patch_intent_git_cli.py"],
+      "verification": ["tests/test_real_patch_adapters.py::test_real_test_receipt_binds_pass_output_and_command", "tests/test_real_patch_adapters.py::test_real_test_receipt_records_failure", "tests/test_real_patch_adapters.py::test_test_matrix_produces_patch_compatible_status"],
       "consumer": "patch drift evaluator"
     },
     {
