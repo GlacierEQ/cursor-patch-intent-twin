@@ -17,3 +17,7 @@ jobs:
       - run: pip install dist/*.whl
       - run: patch-intent-twin examples/compliant_patch.json --budget 0.0 --output /tmp/intent-receipt.json
       - run: python -c 'import json; d=json.load(open("/tmp/intent-receipt.json")); assert d["decision"] == "ALLOW"; assert d["metrics"]["alignment_score"] == 1.0; assert len(d["digest"]) == 64'
+      - run: patch-intent-recover examples/intent_evidence.json --output /tmp/recovered-intent.json
+      - run: python -c 'import json; d=json.load(open("/tmp/recovered-intent.json")); assert d["contract"]["required_paths"] == ["src/engine.py"]; assert len(d["contract_digest"]) == 64'
+      - run: patch-intent-benchmark examples/review_benchmark.json --max-false-allow-rate 0 --min-accuracy 1.0 --output /tmp/review-benchmark.json
+      - run: python -c 'import json; d=json.load(open("/tmp/review-benchmark.json")); assert d["total"] == 8; assert d["false_allows"] == 0; assert d["accuracy"] == 1.0'
