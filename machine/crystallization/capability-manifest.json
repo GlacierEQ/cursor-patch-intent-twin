@@ -24,12 +24,12 @@
     {
       "id": "installable_cli",
       "class": "CLIs",
-      "description": "Evaluate either a supplied observation envelope or a real git commit range from installed commands with non-zero refusal semantics.",
+      "description": "Expose direct evaluation, real-git evaluation, intent recovery, incremental monitoring, and decision benchmarking as installed commands with fail-closed exit semantics.",
       "material": true,
       "state": "WORKING",
-      "implementation_paths": ["src/patch_intent_cli.py", "src/patch_intent_git_cli.py", "pyproject.toml"],
-      "verification": [".github/workflows/tests.yml", "tests/test_real_patch_adapters.py", "examples/compliant_patch.json"],
-      "consumer": "human reviewer and CI"
+      "implementation_paths": ["src/patch_intent_cli.py", "src/patch_intent_git_cli.py", "src/intent_recovery_cli.py", "src/patch_monitor_cli.py", "src/review_benchmark_cli.py", "pyproject.toml"],
+      "verification": [".github/workflows/tests.yml", "tests/test_real_patch_adapters.py", "tests/test_intent_monitor_benchmark.py", "examples/compliant_patch.json"],
+      "consumer": "human reviewer, coding agent, and CI"
     },
     {
       "id": "real_git_patch_adapter",
@@ -44,21 +44,21 @@
     {
       "id": "intent_recovery_adapter",
       "class": "data_processing",
-      "description": "Translate issue/PR requirements, forbidden surfaces, architectural constraints, and expected tests into a versioned intent contract with provenance.",
+      "description": "Recover explicit issue/PR change constraints deterministically with line-level source provenance, conservative budget reconciliation, and fail-closed contradiction handling.",
       "material": true,
-      "state": "MISSING",
-      "implementation_paths": [],
-      "verification": [],
+      "state": "WORKING",
+      "implementation_paths": ["src/intent_recovery.py", "src/intent_recovery_cli.py"],
+      "verification": ["tests/test_intent_monitor_benchmark.py::test_recovers_intent_with_line_level_provenance", "tests/test_intent_monitor_benchmark.py::test_intent_recovery_refuses_contradictory_material_path", ".github/workflows/tests.yml"],
       "consumer": "intent contract engine"
     },
     {
       "id": "continuous_patch_monitor",
       "class": "event_processing",
-      "description": "Re-evaluate the evolving patch as agent changes accumulate and surface drift before the final patch is produced.",
+      "description": "Persist incremental evaluation state and re-evaluate whenever the real patch, intent contract, test plan, subject, or drift budget changes, surfacing introduced and cleared violations.",
       "material": true,
-      "state": "MISSING",
-      "implementation_paths": [],
-      "verification": [],
+      "state": "WORKING",
+      "implementation_paths": ["src/patch_monitor.py", "src/patch_monitor_cli.py"],
+      "verification": ["tests/test_intent_monitor_benchmark.py::test_incremental_monitor_surfaces_new_violation_and_caches_only_identical_evaluation_input", "tests/test_intent_monitor_benchmark.py::test_monitor_re_evaluates_unchanged_patch_when_intent_changes"],
       "consumer": "coding agent and reviewer"
     },
     {
@@ -67,19 +67,19 @@
       "description": "Execute named repository test commands without a shell, bind exact argv/returncode/stdout/stderr digests into receipts, and feed only observed pass/fail state into patch evaluation.",
       "material": true,
       "state": "WORKING",
-      "implementation_paths": ["src/test_run_adapter.py", "src/patch_intent_git_cli.py"],
+      "implementation_paths": ["src/test_run_adapter.py", "src/patch_intent_git_cli.py", "src/patch_monitor.py"],
       "verification": ["tests/test_real_patch_adapters.py::test_real_test_receipt_binds_pass_output_and_command", "tests/test_real_patch_adapters.py::test_real_test_receipt_records_failure", "tests/test_real_patch_adapters.py::test_test_matrix_produces_patch_compatible_status"],
       "consumer": "patch drift evaluator"
     },
     {
       "id": "review_outcome_evaluation",
       "class": "analytics",
-      "description": "Evaluate the system against an independently labeled corpus of aligned and misaligned patches to measure false allows, false refuses, and review utility.",
+      "description": "Evaluate allow/refuse behavior against a labeled aligned/misaligned patch corpus, reporting accuracy, false-allow rate, false-refuse rate, per-case evidence, and content-addressed benchmark receipts.",
       "material": true,
-      "state": "MISSING",
-      "implementation_paths": [],
-      "verification": [],
-      "consumer": "system maintainer"
+      "state": "WORKING",
+      "implementation_paths": ["src/review_benchmark.py", "src/review_benchmark_cli.py", "examples/review_benchmark.json"],
+      "verification": ["tests/test_intent_monitor_benchmark.py::test_labeled_review_benchmark_has_zero_false_allows_and_full_fixture_accuracy", ".github/workflows/tests.yml"],
+      "consumer": "system maintainer and CI"
     }
   ]
 }
