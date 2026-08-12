@@ -1,9 +1,9 @@
 """Incrementally monitor a real git patch against recovered intent.
 
-Each check resolves the current git head, executes named tests, evaluates the
-real observed patch, compares the decision with the prior observation, and
-atomically persists a transition receipt. The monitor surfaces newly introduced
-and cleared violations instead of waiting for a final patch review.
+Each check binds the exact observed git patch, intent contract, required-test
+plan, subject, and drift budget into an evaluation-input digest. Any material
+change re-executes tests and re-evaluates intent. Only an identical evaluation
+input can reuse the previous transition receipt.
 """
 from __future__ import annotations
 
@@ -40,12 +40,22 @@ def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
     os.replace(temp, path)
 
 
+def _normalize_tests(tests: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for row in tests:
+        if not isinstance(row, Mapping):
+            raise ValueError("monitor_test_definition_invalid")
+        rows.append(dict(row))
+    return rows
+
+
 @dataclass(frozen=True)
 class PatchTransition:
     sequence: int
     base_sha: str
     head_sha: str
     observation_digest: str
+    evaluation_input_digest: str
     decision: str
     reasons: tuple[str, ...]
     introduced_reasons: tuple[str, ...]
@@ -60,6 +70,7 @@ class PatchTransition:
             "base_sha": self.base_sha,
             "head_sha": self.head_sha,
             "observation_digest": self.observation_digest,
+            "evaluation_input_digest": self.evaluation_input_digest,
             "decision": self.decision,
             "reasons": list(self.reasons),
             "introduced_reasons": list(self.introduced_reasons),
@@ -85,10 +96,22 @@ class PatchIntentMonitor:
         tests: Iterable[Mapping[str, Any]],
         budget: float = 0.0,
     ) -> PatchTransition:
+        if not isinstance(subject_id, str) or not subject_id.strip():
+            raise ValueError("monitor_subject_id_missing")
+        test_plan = _normalize_tests(tests)
         previous = _load_state(self.state_path)
         observation = observe_git_patch(repo, base_ref, head_ref)
-        previous_digest = None if previous is None else previous.get("observation_digest")
-        changed = previous_digest != observation.observation_digest
+        evaluation_input_digest = _digest(
+            {
+                "observation_digest": observation.observation_digest,
+                "subject_id": subject_id,
+                "intent": dict(intent),
+                "tests": test_plan,
+                "budget": budget,
+            }
+        )
+        previous_digest = None if previous is None else previous.get("evaluation_input_digest")
+        changed = previous_digest != evaluation_input_digest
 
         if not changed and previous is not None:
             return PatchTransition(
@@ -96,6 +119,7 @@ class PatchIntentMonitor:
                 base_sha=observation.base_sha,
                 head_sha=observation.head_sha,
                 observation_digest=observation.observation_digest,
+                evaluation_input_digest=evaluation_input_digest,
                 decision=str(previous.get("decision")),
                 reasons=tuple(previous.get("reasons") or []),
                 introduced_reasons=(),
@@ -105,7 +129,7 @@ class PatchIntentMonitor:
                 test_receipts=tuple(previous.get("test_receipts") or []),
             )
 
-        test_receipts = run_test_matrix(tests, cwd=repo)
+        test_receipts = run_test_matrix(test_plan, cwd=repo)
         patch = observation.as_patch()
         patch["tests"] = [receipt.as_patch_test() for receipt in test_receipts]
         patch["test_receipts"] = [receipt.as_dict() for receipt in test_receipts]
@@ -127,6 +151,7 @@ class PatchIntentMonitor:
             "base_sha": observation.base_sha,
             "head_sha": observation.head_sha,
             "observation_digest": observation.observation_digest,
+            "evaluation_input_digest": evaluation_input_digest,
             "decision": evaluation.decision.value,
             "reasons": list(reasons),
             "introduced_reasons": list(introduced),
@@ -146,6 +171,7 @@ class PatchIntentMonitor:
             base_sha=observation.base_sha,
             head_sha=observation.head_sha,
             observation_digest=observation.observation_digest,
+            evaluation_input_digest=evaluation_input_digest,
             decision=evaluation.decision.value,
             reasons=reasons,
             introduced_reasons=introduced,
