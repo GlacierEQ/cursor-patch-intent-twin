@@ -1,4 +1,16 @@
-"""Patch Intent Twin — independent GlacierEQ scaffold."""
-from .patch_intent_twin import PatchIntentTwin
+"""Executable patch-intent comparison primitives."""
+from .patch_intent_twin import (
+    Decision,
+    IntentSchemaError,
+    PatchIntentTwin,
+    PatchIntentTwinReceipt,
+    PatchIntentTwinRequest,
+)
 
-__all__ = ["PatchIntentTwin"]
+__all__ = [
+    "Decision",
+    "IntentSchemaError",
+    "PatchIntentTwin",
+    "PatchIntentTwinReceipt",
+    "PatchIntentTwinRequest",
+]
