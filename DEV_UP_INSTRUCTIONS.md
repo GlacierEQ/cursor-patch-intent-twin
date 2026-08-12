@@ -1,106 +1,69 @@
-# DEV_UP_INSTRUCTIONS — for implementing AIs / engineers
-
-## Excellence group enrollment
-
-- **Group:** Wave C
-- **Wave id:** `WAVE-C-2026-08-10`
-- **Enrolled:** 2026-08-10T1002Z
-- **Phase:** SCAFFOLD_ENROLLED → implement mechanism → proof → promote (XOR gap)
-- **DoD:** Bodybuilder gates in `excellence/framework/PIP_TO_BODYBUILDER_PIPELINE.md`
+# DEV_UP_INSTRUCTIONS — implementation record
 
 **Repository:** `GlacierEQ/cursor-patch-intent-twin`  
-**Company lens (independent):** Cursor / Anysphere (`cursor`)  
-**Innovation:** Patch Intent Twin  
-**Scaffold batch:** 2026-08-10T0924Z
+**Independent company lens:** Cursor / Anysphere  
+**Innovation:** Patch Intent Twin
 
 ## Mission
 
-Implement a **real, testable** central mechanism that addresses the bottleneck below. Do **not** claim Cursor / Anysphere affiliation, proprietary access, or production deployment.
+Maintain a machine-readable twin of a requested code change and continuously compare the observed patch with that intent so increasing agent authority does not erase reviewability, architectural constraints, or developer trust.
 
-### Bottleneck
-giving coding agents increasing repository/tool authority without sacrificing reviewability, intent alignment, or developer trust
+## Implemented mechanism
 
-### Brick wall
-Silent success without receipts; affiliation or production claims without evidence.
+`src/patch_intent_twin.py` now implements a deterministic intent-to-patch comparison engine.
 
-### Mechanism to implement
-Maintain a machine-readable twin of the requested change—requirements, forbidden surfaces, architectural constraints, expected tests—and continuously compare the evolving patch against that intent.
+The intent contract can bind:
 
-## Hard rules (fail closed)
+- required paths;
+- allowed and forbidden repository surfaces;
+- required tests;
+- required symbols by path;
+- forbidden dependencies;
+- maximum files changed;
+- deletion budget;
+- whether file deletion is permitted.
 
-1. **No affiliation theater** — never state or imply Cursor / Anysphere employment, endorsement, or proprietary systems access.
-2. **No magic numbers / ANSWER=42** — all thresholds named constants with units in comments.
-3. **No import-only operate** — `scripts/operate.py` must call real methods and assert behavioral outputs.
-4. **No field-echo tests** — tests must change inputs and observe different outputs / refuse paths.
-5. **Deterministic** — pure functions preferred; time/randomness injected.
-6. **Receipts** — success and refuse paths return structured dicts with digests where useful.
-7. **PROMOTED XOR gap** — do not mark PROMOTED while `machine/gap-receipt.json` exists.
-8. Keep public surface free of secrets, private repos, and personal contact PII.
+The observed patch carries changed-file status, additions/deletions, observed symbols, test outcomes, and added dependencies.
 
-## Implementation checklist
+The engine emits a structured receipt containing:
 
-### 1. Replace the stub mechanism
-File: `src/patch_intent_twin.py`
+- `ALLOW` or `REFUSE`;
+- exact reasons;
+- alignment and drift scores;
+- hard/soft violation counts;
+- intent digest;
+- patch digest;
+- total additions/deletions and changed-file count.
 
-- Expand `PatchIntentTwin` into a complete, self-contained implementation.
-- Public API must stay stable enough that tests in `tests/test_patch_intent_twin.py` can be upgraded (not gutted).
-- Include at least:
-  - happy-path success with structured result
-  - explicit **refuse** path (invalid input, budget exceeded, expired grant, etc.)
-  - deterministic digest/fingerprint for auditability
-- Prefer stdlib-only unless a dependency is essential (then pin in `requirements.txt`).
+Hard boundaries fail closed. Missing required evidence contributes deterministic drift and cannot be hidden by prose.
 
-### 2. Make operate real
-File: `scripts/operate.py`
+## Runtime surface
 
-- Import the mechanism, construct inputs, call methods, print JSON receipt.
-- Exit non-zero on refuse/failure.
-- Content-check that outputs are not empty / not mere class names.
+- `patch-intent-twin <input.json>` — installed CLI
+- `examples/compliant_patch.json` — reproducible demonstration
+- `scripts/operate.py` — existing cold-start mechanism probe
 
-### 3. Strengthen tests
-Files: `tests/test_patch_intent_twin.py`, `tests/test_adversarial.py`
+## Verification contract
 
-- Positive: ≥3 behavioral cases with distinct inputs → distinct outputs.
-- Negative: malformed input, expired authority, over-budget, idempotency where relevant.
-- Adversarial: attempt to smuggle affiliation claims or bypass refuse gates — must fail closed.
+- behavioral tests cover compliant changes, forbidden surfaces, required symbols, required tests, file deletion, change-budget overruns, forbidden dependencies, malformed duplicate evidence, and digest sensitivity;
+- generic adversarial tests remain in place;
+- CI runs pytest and cold-start operation;
+- CI also builds and installs a wheel, executes the installed CLI, and asserts an `ALLOW` decision on the reproducible example.
 
-### 4. Freeze the target contract
-File: `machine/target-contract.json`
+## Authority and truth boundaries
 
-- Update `target.purpose` and `target.central_bottleneck` only if the mechanism narrows (never broadens into marketing).
-- When tests + operate pass: set `current.implemented/tested/operable` appropriately and bind proof receipt.
+- No Cursor / Anysphere affiliation, endorsement, employment, proprietary access, or production deployment is claimed.
+- The engine is an independent reference implementation.
+- Existing promotion authority and estate control-plane surfaces remain intact.
+- Promotion state must still be earned from exact-source verification; this file does not declare promotion by itself.
 
-### 5. Excellence state
-File: `machine/excellence-state.json`
+## Next depth gates
 
-- Leave `DISCOVERED` until real proof exists.
-- On elevation: follow Helix promotion policy (AUTHORITY_BOUND + PROJECTION_TRUTH_CLOSED for PROMOTED).
+The mechanism is usable now. Further depth should come from real patch adapters rather than another abstraction layer:
 
-### 6. README honesty
-- Keep non-affiliation block.
-- Document exact current boundary (what works / what does not).
+1. adapter from `git diff --numstat` / changed symbols into the observed-patch schema;
+2. adapter from issue/PR requirements into the intent contract;
+3. optional streaming comparison as a coding-agent patch evolves;
+4. measured review outcomes on an independently labeled patch corpus.
 
-## Suggested algorithm sketch
-
-```text
-input → validate schema → check authority/budget/freshness
-      → compute decision (allow | refuse)
-      → emit receipt {decision, reasons[], digest, metrics}
-```
-
-## Definition of done (for the filling AI)
-
-- [ ] `python -m pytest -q` passes with **real** behavioral tests (not skip-all)
-- [ ] `python scripts/operate.py` prints a JSON receipt with decision + digest
-- [ ] Refuse path covered
-- [ ] No company affiliation language outside the explicit non-affiliation disclaimer
-- [ ] `DEV_UP_INSTRUCTIONS.md` can be marked COMPLETED with date + commit in a short receipt note at bottom
-
-## Out of scope
-
-- Cloud deploy, customer pilots, proprietary Cursor / Anysphere APIs
-- Multi-repo monorepos, secret material, personal data
-- Claiming “production-ready” without operate + tests + proof receipt
-
----
-*Scaffold only. Implementation is the next agent’s job.*
+No implementation work should regress the current fail-closed contract merely to simplify integration.
