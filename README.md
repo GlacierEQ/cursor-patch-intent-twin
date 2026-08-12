@@ -6,59 +6,75 @@ Independent GlacierEQ portfolio exhibit aligned to **Cursor / Anysphere** operat
 
 ## Problem
 
-Coding agents become more useful as they gain repository and tool authority, but that same authority makes silent intent drift more dangerous. A patch can be syntactically correct and fully tested while still touching forbidden surfaces, skipping required architectural work, deleting protected files, or changing more than the operator authorized.
+Coding agents become more useful as they gain repository and tool authority, but that same authority makes silent intent drift more dangerous. A patch can compile and pass tests while still violating requested scope, touching forbidden surfaces, skipping required architectural work, deleting protected files, or exceeding the developer's authorized change budget.
 
-## Working mechanism
+## System
 
-**Patch Intent Twin** binds a machine-readable change contract to an observed patch and produces a deterministic allow/refuse receipt.
+**Patch Intent Twin** turns change intent into deterministic constraints and continuously compares those constraints with the real evolving repository patch.
 
-The contract can require:
+The implemented system now includes five connected execution surfaces:
 
-- paths that must change;
-- paths that are allowed to change;
-- surfaces that are forbidden;
-- tests that must pass;
-- symbols that must appear in specific files;
-- dependencies that must never be added;
-- maximum changed-file and deletion budgets;
-- explicit permission before file deletion.
+1. **Intent recovery** parses explicit issue/PR constraints into a versioned contract while retaining source URI, line number, line digest, source digest, and contract digest. Contradictory material instructions fail closed.
+2. **Real git observation** resolves exact base/head commits, reads rename-aware name-status and numstat data, extracts changed symbols from exact head blobs, observes dependency-manifest additions, and emits a content-addressed patch observation.
+3. **Real test receipts** execute named test commands without a shell and bind argv, exit status, stdout/stderr digests, and evidence tails into receipts. Caller-supplied test status is not trusted on the real-git path.
+4. **Intent drift evaluation** checks required/allowed/forbidden surfaces, required tests and symbols, forbidden dependencies, deletion authority, file-count/deletion budgets, and drift tolerance. Hard violations always refuse.
+5. **Incremental monitoring + benchmark** persists evaluation state, re-evaluates whenever patch/intent/test-plan/budget changes, reports introduced/cleared violations, and measures false-allow/false-refuse behavior on a labeled review corpus.
 
-The observed patch records changed files, file status, additions/deletions, observed symbols, test outcomes, and new dependencies. The engine evaluates those facts against the contract and reports alignment, drift, hard violations, soft evidence gaps, and content-addressed intent/patch digests.
-
-A hard boundary always refuses. Missing expected evidence creates measurable drift and refuses when it exceeds the operator's configured tolerance.
-
-## Example
+## Install and run
 
 ```bash
 python -m pytest -q
-python scripts/operate.py
-
 python -m pip install build
 python -m build
 python -m pip install dist/*.whl
+```
 
+Direct machine-envelope evaluation:
+
+```bash
 patch-intent-twin examples/compliant_patch.json --budget 0.0 --output receipt.json
 ```
 
-The installed CLI exits `0` only when the patch satisfies the contract. Refusal exits non-zero, so the same mechanism can gate CI, an agent loop, or a pull-request promotion workflow.
+Recover intent from provenance-bound evidence:
 
-## Why this is technically useful
+```bash
+patch-intent-recover examples/intent_evidence.json --output recovered-intent.json
+```
 
-The mechanism does not ask an LLM to explain whether a patch "looks aligned." It converts intent into deterministic constraints that can be checked continuously as the patch evolves. The resulting receipt is reviewable, reproducible, and digest-bound to the exact intent and observed patch facts.
+Evaluate a real git commit range and execute the required tests:
+
+```bash
+patch-intent-git config.json --repo . --base <BASE_SHA> --head HEAD --output real-patch-receipt.json
+```
+
+Monitor an evolving patch:
+
+```bash
+patch-intent-monitor config.json --repo . --base <BASE_SHA> --head HEAD \
+  --state .patch-intent-state.json --iterations 1 --output transition.json
+```
+
+Benchmark decision behavior:
+
+```bash
+patch-intent-benchmark examples/review_benchmark.json \
+  --max-false-allow-rate 0 --min-accuracy 1.0 --output benchmark.json
+```
+
+All execution commands use non-zero refusal/error exits where appropriate, so they can participate directly in agent loops and CI workflows.
 
 ## Proof surface
 
-| Surface | Path |
-|---|---|
-| Intent / drift engine | `src/patch_intent_twin.py` |
-| Installed CLI | `src/patch_intent_cli.py` |
-| Reproducible example | `examples/compliant_patch.json` |
-| Behavioral tests | `tests/test_patch_intent_twin.py` |
-| Adversarial tests | `tests/test_adversarial.py` |
-| Cold-start operation | `scripts/operate.py` |
-| Implementation record | `DEV_UP_INSTRUCTIONS.md` |
-| Issue contract | `ISSUE_CONTRACT.md` |
+| Capability | Implementation | Behavioral proof |
+|---|---|---|
+| Intent contract + drift engine | `src/patch_intent_twin.py` | `tests/test_patch_intent_twin.py` |
+| Real git patch observation | `src/git_patch_adapter.py` | `tests/test_real_patch_adapters.py` |
+| Real test execution receipts | `src/test_run_adapter.py` | `tests/test_real_patch_adapters.py` |
+| Provenance-bound intent recovery | `src/intent_recovery.py` | `tests/test_intent_monitor_benchmark.py` |
+| Incremental monitor | `src/patch_monitor.py` | `tests/test_intent_monitor_benchmark.py` |
+| Labeled review benchmark | `src/review_benchmark.py` | `tests/test_intent_monitor_benchmark.py` |
+| Installed command surfaces | `src/*_cli.py`, `pyproject.toml` | `.github/workflows/tests.yml` |
 
 ## Current boundary
 
-This is an independent reference implementation. It does not integrate proprietary Cursor APIs and does not claim production use or measured developer outcomes. The next meaningful depth gate is an adapter that derives the observed-patch facts from real git diffs and test runs, followed by evaluation on an independently labeled patch-review corpus.
+This is an independent, local-first developer tool. It does not integrate proprietary Cursor APIs and makes no claim of production deployment or Cursor-measured developer outcomes. Its labeled benchmark is repository-owned reference evidence, not an external Cursor dataset. The crystallization manifests define the complete material capability model; terminal `CRYSTALLIZED` status is earned only when exact-head build, behavior, runtime, and documentation proof are green.
