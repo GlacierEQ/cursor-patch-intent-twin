@@ -1,9 +1,37 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "cursor-patch-intent-twin"
-version = "1.0.0"
-description = "Unified-diff intent comparison and merge-blocking patch receipts"
+version = "0.3.0"
+description = "Patch intent recovery, real git drift evaluation, continuous monitoring, and review benchmarking"
 requires-python = ">=3.11"
 dependencies = []
+
+[project.scripts]
+patch-intent-twin = "patch_intent_cli:main"
+patch-intent-git = "patch_intent_git_cli:main"
+patch-intent-recover = "intent_recovery_cli:main"
+patch-intent-monitor = "patch_monitor_cli:main"
+patch-intent-benchmark = "review_benchmark_cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = [
+  "patch_intent_twin",
+  "patch_intent_cli",
+  "patch_intent_git_cli",
+  "git_patch_adapter",
+  "test_run_adapter",
+  "intent_recovery",
+  "intent_recovery_cli",
+  "patch_monitor",
+  "patch_monitor_cli",
+  "review_benchmark",
+  "review_benchmark_cli",
+  "promotion_authority"
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -3,146 +3,119 @@ from __future__ import annotations
 from patch_intent_twin import Decision, PatchIntentTwin, PatchIntentTwinRequest
 
 
-DIFF = """diff --git a/src/service.py b/src/service.py
---- a/src/service.py
-+++ b/src/service.py
-@@ -1 +1,2 @@
--old = True
-+def run():
-+    return \"ok\"
-diff --git a/tests/test_service.py b/tests/test_service.py
---- a/tests/test_service.py
-+++ b/tests/test_service.py
-@@ -1 +1,2 @@
--assert False
-+def test_run():
-+    assert True
-"""
+def request(*, patch: dict, intent: dict | None = None, budget: float = 0.0) -> PatchIntentTwinRequest:
+    return PatchIntentTwinRequest(
+        subject_id="change-123",
+        budget=budget,
+        payload={
+            "intent": intent
+            or {
+                "required_paths": ["src/engine.py"],
+                "allowed_paths": ["src/**", "tests/**"],
+                "forbidden_paths": [".github/**", "infra/prod/**"],
+                "required_tests": ["unit", "adversarial"],
+                "required_symbols": {"src/engine.py": ["apply_patch"]},
+                "max_files_changed": 4,
+                "max_deletions": 50,
+                "allow_file_deletion": False,
+            },
+            "patch": patch,
+        },
+    )
 
 
-def _intent(**overrides):
-    value = {
-        "must_touch": ["src/*.py", "tests/*.py"],
-        "forbidden_paths": [".github/**", "infra/**"],
-        "allowed_paths": ["src/**", "tests/**"],
-        "required_tests": ["unit"],
-        "required_receipts": ["review"],
-        "max_changed_files": 3,
-        "max_lines_changed": 20,
-        "max_cost": 0.75,
-        "content_rules": [
-            {
-                "id": "service-entry",
-                "path": "src/*.py",
-                "must_contain": ["def run"],
-                "must_not_contain": ["TODO"],
-            }
+def compliant_patch() -> dict:
+    return {
+        "changed_files": [
+            {"path": "src/engine.py", "status": "modified", "additions": 30, "deletions": 4, "symbols": ["apply_patch"]},
+            {"path": "tests/test_engine.py", "status": "modified", "additions": 20, "deletions": 0, "symbols": []},
         ],
+        "tests": [
+            {"name": "unit", "status": "passed"},
+            {"name": "adversarial", "status": "passed"},
+        ],
+        "dependencies_added": [],
     }
-    value.update(overrides)
-    return value
 
 
-def _request(diff=DIFF, intent=None, **payload_overrides):
-    payload = {
-        "intent": intent or _intent(),
-        "unified_diff": diff,
-        "tests": {"unit": True},
-        "receipts": {"review": "review-42"},
-        "cost": 0.2,
-    }
-    payload.update(payload_overrides)
-    return PatchIntentTwinRequest(subject_id="patch-42", payload=payload, budget=1.0)
-
-
-def test_unified_diff_is_parsed_into_real_patch_evidence() -> None:
-    patch = PatchIntentTwin.parse_unified_diff(DIFF)
-
-    assert [item["path"] for item in patch["files"]] == [
-        "src/service.py",
-        "tests/test_service.py",
-    ]
-    assert patch["files"][0]["additions"] == 2
-    assert patch["files"][0]["deletions"] == 1
-    assert "def run" in patch["files"][0]["added_text"]
-
-
-def test_patch_matching_intent_allows_merge() -> None:
-    receipt = PatchIntentTwin().evaluate(_request())
-
+def test_allows_patch_that_matches_machine_readable_intent() -> None:
+    receipt = PatchIntentTwin().evaluate(request(patch=compliant_patch()))
     assert receipt.decision is Decision.ALLOW
-    assert receipt.merge_blocked is False
     assert receipt.reasons == ("patch_matches_intent",)
-    assert receipt.changed_paths == ("src/service.py", "tests/test_service.py")
-    assert receipt.metrics["changed_file_count"] == 2
-    assert receipt.metrics["lines_changed"] == 6
-    assert receipt.metrics["failed_check_count"] == 0
-    assert len(receipt.intent_digest or "") == 64
-    assert len(receipt.patch_digest or "") == 64
+    assert receipt.metrics["alignment_score"] == 1.0
+    assert receipt.metrics["drift_score"] == 0.0
+    assert receipt.metrics["contract_valid"] is True
+    assert len(receipt.metrics["intent_digest"]) == 64
+    assert len(receipt.metrics["patch_digest"]) == 64
 
 
-def test_forbidden_surface_blocks_merge() -> None:
-    bad = DIFF + """diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
---- a/.github/workflows/release.yml
-+++ b/.github/workflows/release.yml
-@@ -1 +1 @@
--old
-+new
-"""
-    receipt = PatchIntentTwin().evaluate(_request(diff=bad))
-
-    assert receipt.decision is Decision.REFUSE
-    assert "forbidden_path_changed:.github/workflows/release.yml" in receipt.reasons
-    assert "path_outside_allowed_scope:.github/workflows/release.yml" in receipt.reasons
-
-
-def test_required_surface_must_actually_be_touched() -> None:
-    only_source = """diff --git a/src/service.py b/src/service.py
---- a/src/service.py
-+++ b/src/service.py
-@@ -1 +1 @@
--old
-+def run(): pass
-"""
-    receipt = PatchIntentTwin().evaluate(_request(diff=only_source))
-
-    assert receipt.decision is Decision.REFUSE
-    assert "required_surface_untouched:tests/*.py" in receipt.reasons
-
-
-def test_required_test_receipt_and_budget_are_enforced() -> None:
-    receipt = PatchIntentTwin().evaluate(
-        _request(
-            tests={"unit": False},
-            receipts={},
-            cost=0.80,
-        )
+def test_refuses_forbidden_repository_surface_even_when_tests_pass() -> None:
+    patch = compliant_patch()
+    patch["changed_files"].append(
+        {"path": ".github/workflows/deploy.yml", "status": "modified", "additions": 2, "deletions": 1, "symbols": []}
     )
-
+    receipt = PatchIntentTwin().evaluate(request(patch=patch))
     assert receipt.decision is Decision.REFUSE
-    assert "test_failed_or_missing:unit" in receipt.reasons
-    assert "receipt_missing:review" in receipt.reasons
-    assert "budget_exceeded" in receipt.reasons
+    assert "forbidden_path_touched:.github/workflows/deploy.yml" in receipt.reasons
+    assert "path_outside_allowed_surface:.github/workflows/deploy.yml" in receipt.reasons
 
 
-def test_content_rule_checks_added_code() -> None:
-    bad = DIFF.replace("+def run():", "+# TODO implement\n+def run():")
-    receipt = PatchIntentTwin().evaluate(_request(diff=bad))
-
+def test_refuses_missing_required_symbol_and_reports_drift() -> None:
+    patch = compliant_patch()
+    patch["changed_files"][0]["symbols"] = []
+    receipt = PatchIntentTwin().evaluate(request(patch=patch, budget=0.0))
     assert receipt.decision is Decision.REFUSE
-    assert "content_forbidden_added:service-entry:TODO" in receipt.reasons
+    assert "required_symbol_missing:src/engine.py:apply_patch" in receipt.reasons
+    assert "drift_budget_exceeded" in receipt.reasons
+    assert receipt.metrics["drift_score"] > 0
 
 
-def test_expected_intent_digest_detects_silent_scope_change() -> None:
-    twin = PatchIntentTwin()
-    original_digest = twin.compile_intent(_intent())["intent_digest"]
-    changed = _intent(allowed_paths=["src/**", "tests/**", "infra/**"])
-    receipt = twin.evaluate(
-        _request(
-            intent=changed,
-            expected_intent_digest=original_digest,
-        )
+def test_refuses_failed_required_test() -> None:
+    patch = compliant_patch()
+    patch["tests"][1]["status"] = "failed"
+    receipt = PatchIntentTwin().evaluate(request(patch=patch))
+    assert receipt.decision is Decision.REFUSE
+    assert "required_test_failed:adversarial" in receipt.reasons
+    assert "test_failed:adversarial" in receipt.reasons
+
+
+def test_refuses_file_deletion_and_change_budget_overrun() -> None:
+    patch = compliant_patch()
+    patch["changed_files"].extend(
+        [
+            {"path": "src/legacy.py", "status": "deleted", "additions": 0, "deletions": 10, "symbols": []},
+            {"path": "src/a.py", "status": "added", "additions": 1, "deletions": 0, "symbols": []},
+            {"path": "src/b.py", "status": "added", "additions": 1, "deletions": 0, "symbols": []},
+        ]
     )
-
+    receipt = PatchIntentTwin().evaluate(request(patch=patch))
     assert receipt.decision is Decision.REFUSE
-    assert "intent_digest_mismatch" in receipt.reasons
+    assert "file_deletion_forbidden:src/legacy.py" in receipt.reasons
+    assert "max_files_changed_exceeded" in receipt.reasons
+
+
+def test_refuses_forbidden_dependency_addition() -> None:
+    patch = compliant_patch()
+    patch["dependencies_added"] = ["unsafe-agent-root"]
+    intent = request(patch=patch).payload["intent"]
+    intent = {**intent, "forbidden_dependencies": ["unsafe-agent-root"]}
+    receipt = PatchIntentTwin().evaluate(request(patch=patch, intent=intent))
+    assert receipt.decision is Decision.REFUSE
+    assert "forbidden_dependency_added:unsafe-agent-root" in receipt.reasons
+
+
+def test_malformed_patch_fails_closed_instead_of_crashing_open() -> None:
+    patch = compliant_patch()
+    patch["changed_files"].append(dict(patch["changed_files"][0]))
+    receipt = PatchIntentTwin().evaluate(request(patch=patch))
+    assert receipt.decision is Decision.REFUSE
+    assert "duplicate_changed_file" in receipt.reasons
+    assert receipt.metrics["contract_valid"] is False
+
+
+def test_patch_digest_changes_when_observed_patch_changes() -> None:
+    first = PatchIntentTwin().evaluate(request(patch=compliant_patch()))
+    patch = compliant_patch()
+    patch["changed_files"][0]["additions"] = 31
+    second = PatchIntentTwin().evaluate(request(patch=patch))
+    assert first.metrics["patch_digest"] != second.metrics["patch_digest"]

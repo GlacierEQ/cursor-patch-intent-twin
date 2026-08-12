@@ -1,104 +1,80 @@
 # Patch Intent Twin
 
-Independent GlacierEQ portfolio implementation aligned to public Cursor / Anysphere operating themes. This repository is not affiliated with or endorsed by Cursor or Anysphere.
+Independent GlacierEQ portfolio exhibit aligned to **Cursor / Anysphere** operating themes.
 
-## Purpose
+> **Not affiliated.** This repository is not affiliated with, endorsed by, employed by, or deployed at Cursor / Anysphere. No proprietary access, production deployment, customer impact, or company partnership is claimed.
 
-Keep an agent-generated patch aligned with the change a developer actually requested.
+## Problem
 
-The twin compiles a machine-readable change contract and continuously compares an evolving patch against that intent. It can consume a normalized patch description or parse a real unified Git diff.
+Coding agents become more useful as they gain repository and tool authority, but that same authority makes silent intent drift more dangerous. A patch can compile and pass tests while still violating requested scope, touching forbidden surfaces, skipping required architectural work, deleting protected files, or exceeding the developer's authorized change budget.
 
-## Capabilities
+## System
 
-The engine enforces:
+**Patch Intent Twin** turns change intent into deterministic constraints and continuously compares those constraints with the real evolving repository patch.
 
-- required surfaces that must be touched
-- forbidden repository paths
-- explicit allowed-path scope
-- maximum changed-file count
-- maximum total additions + deletions
-- required tests
-- required evidence receipts
-- patch cost against request and intent budgets
-- content rules for added code
-- deterministic intent and patch digests
-- expected-intent digest checks for silent scope mutation
-- deterministic patch-drift receipts between snapshots
+The implemented system now includes five connected execution surfaces:
 
-Content rules can require or forbid specific strings in **added** code for matching paths. Removed text does not magically become a new violation.
+1. **Intent recovery** parses explicit issue/PR constraints into a versioned contract while retaining source URI, line number, line digest, source digest, and contract digest. Contradictory material instructions fail closed.
+2. **Real git observation** resolves exact base/head commits, reads rename-aware name-status and numstat data, extracts changed symbols from exact head blobs, observes dependency-manifest additions, and emits a content-addressed patch observation.
+3. **Real test receipts** execute named test commands without a shell and bind argv, exit status, stdout/stderr digests, and evidence tails into receipts. Caller-supplied test status is not trusted on the real-git path.
+4. **Intent drift evaluation** checks required/allowed/forbidden surfaces, required tests and symbols, forbidden dependencies, deletion authority, file-count/deletion budgets, and drift tolerance. Hard violations always refuse.
+5. **Incremental monitoring + benchmark** persists evaluation state, re-evaluates whenever patch/intent/test-plan/budget changes, reports introduced/cleared violations, and measures false-allow/false-refuse behavior on a labeled review corpus.
 
-## Unified diff example
-
-```diff
-diff --git a/src/service.py b/src/service.py
---- a/src/service.py
-+++ b/src/service.py
-@@ -1 +1,2 @@
--old = True
-+def run():
-+    return "ok"
-```
-
-The parser records path, status, additions, deletions, hunks, added text, and removed text for each changed file.
-
-## Run it
-
-```bash
-python scripts/operate.py
-```
-
-The built-in example evaluates a real two-file unified diff against path, test, receipt, size, and content constraints.
-
-Use your own files:
-
-```bash
-python scripts/operate.py --input intent.json --diff change.diff --output receipt.json
-```
-
-Example intent:
-
-```json
-{
-  "subject_id": "patch-42",
-  "budget": 1.0,
-  "intent": {
-    "must_touch": ["src/*.py", "tests/*.py"],
-    "forbidden_paths": [".github/**", "infra/**"],
-    "allowed_paths": ["src/**", "tests/**"],
-    "required_tests": ["unit"],
-    "required_receipts": ["review"],
-    "max_changed_files": 3,
-    "max_lines_changed": 40,
-    "content_rules": [
-      {
-        "id": "entrypoint",
-        "path": "src/*.py",
-        "must_contain": ["def run"],
-        "must_not_contain": ["TODO"]
-      }
-    ]
-  },
-  "tests": {"unit": true},
-  "receipts": {"review": "review-42"}
-}
-```
-
-## Intent drift
-
-`compile_intent()` produces a stable digest. Persist it with the task and pass it later as `expected_intent_digest`. If the allowed scope, constraints, or required proof changes silently, the evaluation blocks the patch.
-
-## Patch drift
-
-`PatchIntentTwin.drift(previous_patch, current_patch)` returns added, removed, and retained changed paths plus a deterministic digest. This makes scope expansion visible across agent iterations even before final merge evaluation.
-
-## Verify behavior
+## Install and run
 
 ```bash
 python -m pytest -q
+python -m pip install build
+python -m build
+python -m pip install dist/*.whl
 ```
 
-Tests cover unified-diff parsing, successful intent matching, forbidden and out-of-scope paths, required surfaces, tests, evidence receipts, budgets, content constraints, intent drift, duplicate paths/rules, line budgets, removed-vs-added content semantics, and patch-snapshot drift.
+Direct machine-envelope evaluation:
 
-## Boundary
+```bash
+patch-intent-twin examples/compliant_patch.json --budget 0.0 --output receipt.json
+```
 
-This is a vendor-neutral patch-intent library and CLI. It does not claim Cursor integration, proprietary agent access, or hosted deployment. It is designed to sit immediately before a merge or code-write boundary in any coding-agent control plane.
+Recover intent from provenance-bound evidence:
+
+```bash
+patch-intent-recover examples/intent_evidence.json --output recovered-intent.json
+```
+
+Evaluate a real git commit range and execute the required tests:
+
+```bash
+patch-intent-git config.json --repo . --base <BASE_SHA> --head HEAD --output real-patch-receipt.json
+```
+
+Monitor an evolving patch:
+
+```bash
+patch-intent-monitor config.json --repo . --base <BASE_SHA> --head HEAD \
+  --state .patch-intent-state.json --iterations 1 --output transition.json
+```
+
+Benchmark decision behavior:
+
+```bash
+patch-intent-benchmark examples/review_benchmark.json \
+  --max-false-allow-rate 0 --min-accuracy 1.0 --output benchmark.json
+```
+
+All execution commands use non-zero refusal/error exits where appropriate, so they can participate directly in agent loops and CI workflows.
+
+## Proof surface
+
+| Capability | Implementation | Behavioral proof |
+|---|---|---|
+| Intent contract + drift engine | `src/patch_intent_twin.py` | `tests/test_patch_intent_twin.py` |
+| Real git patch observation | `src/git_patch_adapter.py` | `tests/test_real_patch_adapters.py` |
+| Real test execution receipts | `src/test_run_adapter.py` | `tests/test_real_patch_adapters.py` |
+| Provenance-bound intent recovery | `src/intent_recovery.py` | `tests/test_intent_monitor_benchmark.py` |
+| Incremental monitor | `src/patch_monitor.py` | `tests/test_intent_monitor_benchmark.py` |
+| Labeled review benchmark | `src/review_benchmark.py` | `tests/test_intent_monitor_benchmark.py` |
+| Installed command surfaces | `src/*_cli.py`, `pyproject.toml` | `.github/workflows/tests.yml` |
+
+## Current boundary
+
+This is an independent, local-first developer tool. It does not integrate proprietary Cursor APIs and makes no claim of production deployment or Cursor-measured developer outcomes. Its labeled benchmark is repository-owned reference evidence, not an external Cursor dataset. The crystallization manifests define the complete material capability model; terminal `CRYSTALLIZED` status is earned only when exact-head build, behavior, runtime, and documentation proof are green.

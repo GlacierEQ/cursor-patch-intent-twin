@@ -1,0 +1,25 @@
+{
+  "schema": "glaciereq.crystallization-purpose.v1",
+  "canonical_identity": "GlacierEQ/cursor-patch-intent-twin",
+  "purpose": "Keep increasingly autonomous code changes continuously aligned with an explicit machine-readable intent contract.",
+  "problem": "Coding agents can produce syntactically valid and even test-passing patches that silently violate requested scope, architectural constraints, forbidden surfaces, required tests, or developer expectations.",
+  "intended_outcome": "A real patch can be translated into observed facts, compared continuously against recovered change intent, and deterministically allowed or refused with reviewable evidence before unauthorized drift reaches merge or deployment.",
+  "consumers": ["coding agent", "developer reviewer", "pull request workflow", "CI promotion path"],
+  "system_kind": "developer_tool",
+  "naturally_deployable": false,
+  "lineage": {
+    "predecessors": [],
+    "successors": [],
+    "duplicates": [],
+    "canonical_successor": null
+  },
+  "evidence": [
+    "ISSUE_CONTRACT.md",
+    "README.md",
+    "DEV_UP_INSTRUCTIONS.md",
+    "src/patch_intent_twin.py",
+    "tests/",
+    "examples/compliant_patch.json",
+    "git history"
+  ]
+}

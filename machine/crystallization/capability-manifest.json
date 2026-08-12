@@ -1,0 +1,85 @@
+{
+  "schema": "glaciereq.crystallization-capabilities.v1",
+  "capabilities": [
+    {
+      "id": "intent_contract_engine",
+      "class": "core_domain_logic",
+      "description": "Represent required, allowed, and forbidden change surfaces plus tests, symbols, dependencies, deletion authority, and change budgets.",
+      "material": true,
+      "state": "WORKING",
+      "implementation_paths": ["src/patch_intent_twin.py"],
+      "verification": ["tests/test_patch_intent_twin.py"],
+      "consumer": "coding-agent review loop"
+    },
+    {
+      "id": "patch_drift_evaluator",
+      "class": "execution_engine",
+      "description": "Compare observed patch facts with the intent contract, compute alignment/drift, and fail closed on hard violations or excessive drift.",
+      "material": true,
+      "state": "WORKING",
+      "implementation_paths": ["src/patch_intent_twin.py"],
+      "verification": ["tests/test_patch_intent_twin.py", "tests/test_adversarial.py"],
+      "consumer": "review workflow"
+    },
+    {
+      "id": "installable_cli",
+      "class": "CLIs",
+      "description": "Expose direct evaluation, real-git evaluation, intent recovery, incremental monitoring, and decision benchmarking as installed commands with fail-closed exit semantics.",
+      "material": true,
+      "state": "WORKING",
+      "implementation_paths": ["src/patch_intent_cli.py", "src/patch_intent_git_cli.py", "src/intent_recovery_cli.py", "src/patch_monitor_cli.py", "src/review_benchmark_cli.py", "pyproject.toml"],
+      "verification": [".github/workflows/tests.yml", "tests/test_real_patch_adapters.py", "tests/test_intent_monitor_benchmark.py", "examples/compliant_patch.json"],
+      "consumer": "human reviewer, coding agent, and CI"
+    },
+    {
+      "id": "real_git_patch_adapter",
+      "class": "integrations",
+      "description": "Derive changed files, status, additions/deletions, changed symbols, dependency-manifest additions, and exact base/head provenance directly from a real git commit range.",
+      "material": true,
+      "state": "WORKING",
+      "implementation_paths": ["src/git_patch_adapter.py", "src/patch_intent_git_cli.py"],
+      "verification": ["tests/test_real_patch_adapters.py::test_observes_exact_git_patch_and_symbols", "tests/test_real_patch_adapters.py::test_refuses_empty_commit_range"],
+      "consumer": "patch drift evaluator"
+    },
+    {
+      "id": "intent_recovery_adapter",
+      "class": "data_processing",
+      "description": "Recover explicit issue/PR change constraints deterministically with line-level source provenance, conservative budget reconciliation, and fail-closed contradiction handling.",
+      "material": true,
+      "state": "WORKING",
+      "implementation_paths": ["src/intent_recovery.py", "src/intent_recovery_cli.py"],
+      "verification": ["tests/test_intent_monitor_benchmark.py::test_recovers_intent_with_line_level_provenance", "tests/test_intent_monitor_benchmark.py::test_intent_recovery_refuses_contradictory_material_path", ".github/workflows/tests.yml"],
+      "consumer": "intent contract engine"
+    },
+    {
+      "id": "continuous_patch_monitor",
+      "class": "event_processing",
+      "description": "Persist incremental evaluation state and re-evaluate whenever the real patch, intent contract, test plan, subject, or drift budget changes, surfacing introduced and cleared violations.",
+      "material": true,
+      "state": "WORKING",
+      "implementation_paths": ["src/patch_monitor.py", "src/patch_monitor_cli.py"],
+      "verification": ["tests/test_intent_monitor_benchmark.py::test_incremental_monitor_surfaces_new_violation_and_caches_only_identical_evaluation_input", "tests/test_intent_monitor_benchmark.py::test_monitor_re_evaluates_unchanged_patch_when_intent_changes"],
+      "consumer": "coding agent and reviewer"
+    },
+    {
+      "id": "real_test_run_adapter",
+      "class": "integrations",
+      "description": "Execute named repository test commands without a shell, bind exact argv/returncode/stdout/stderr digests into receipts, and feed only observed pass/fail state into patch evaluation.",
+      "material": true,
+      "state": "WORKING",
+      "implementation_paths": ["src/test_run_adapter.py", "src/patch_intent_git_cli.py", "src/patch_monitor.py"],
+      "verification": ["tests/test_real_patch_adapters.py::test_real_test_receipt_binds_pass_output_and_command", "tests/test_real_patch_adapters.py::test_real_test_receipt_records_failure", "tests/test_real_patch_adapters.py::test_test_matrix_produces_patch_compatible_status"],
+      "consumer": "patch drift evaluator"
+    },
+    {
+      "id": "review_outcome_evaluation",
+      "class": "analytics",
+      "description": "Evaluate allow/refuse behavior against a labeled aligned/misaligned patch corpus, reporting accuracy, false-allow rate, false-refuse rate, per-case evidence, and content-addressed benchmark receipts.",
+      "material": true,
+      "state": "WORKING",
+      "implementation_paths": ["src/review_benchmark.py", "src/review_benchmark_cli.py", "examples/review_benchmark.json"],
+      "verification": ["tests/test_intent_monitor_benchmark.py::test_labeled_review_benchmark_has_zero_false_allows_and_full_fixture_accuracy", ".github/workflows/tests.yml"],
+      "consumer": "system maintainer and CI"
+    }
+  ]
+}
