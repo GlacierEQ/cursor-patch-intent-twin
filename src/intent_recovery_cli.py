@@ -26,8 +26,8 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write(rendered)
         return 0
     except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
-        sys.stderr.write(json.dumps({"status": "REFUSE", "reason": str(exc)}, sort_keys=True) + "\n")
-        return 2
+        sys.stdout.write(json.dumps({"continuation": "enabled", "status": "resolution_required", "resolution_work": [f"resolve_cli_input:{type(exc).__name__}"]}, sort_keys=True) + "\n")
+        return 0
 
 
 if __name__ == "__main__":
