@@ -87,24 +87,29 @@ Allow file deletion: false
     assert len(recovered.source_digest) == 64
 
 
-def test_intent_recovery_refuses_contradictory_material_path() -> None:
-    with pytest.raises(ValueError, match="intent_path_contradiction:src/engine.py"):
-        recover_intent(
-            [
-                IntentEvidence(
-                    source_id="issue",
-                    source_uri="fixture://issue",
-                    text="Required paths: src/engine.py\nForbidden paths: src/engine.py\n",
-                )
-            ]
-        )
+def test_intent_recovery_preserves_contradictory_material_path_as_resolution_work() -> None:
+    recovered = recover_intent(
+        [
+            IntentEvidence(
+                source_id="issue",
+                source_uri="fixture://issue",
+                text="Required paths: src/engine.py\nForbidden paths: src/engine.py\n",
+            )
+        ]
+    )
+    assert recovered.continuation == "enabled"
+    assert "resolve_path_contradiction:src/engine.py" in recovered.resolution_work
+    assert recovered.contract["required_paths"] == ["src/engine.py"]
+    assert recovered.contract["forbidden_paths"] == ["src/engine.py"]
 
 
-def test_intent_recovery_refuses_when_no_material_requirement_is_explicit() -> None:
-    with pytest.raises(ValueError, match="intent_material_requirements_not_recovered"):
-        recover_intent(
-            [IntentEvidence(source_id="issue", source_uri="fixture://issue", text="Max files changed: 3\n")]
-        )
+def test_intent_recovery_keeps_missing_material_requirement_actionable() -> None:
+    recovered = recover_intent(
+        [IntentEvidence(source_id="issue", source_uri="fixture://issue", text="Max files changed: 3\n")]
+    )
+    assert recovered.continuation == "enabled"
+    assert recovered.contract["max_files_changed"] == 3
+    assert "supply_material_requirement" in recovered.resolution_work
 
 
 def test_incremental_monitor_surfaces_new_violation_and_caches_only_identical_evaluation_input(tmp_path: Path) -> None:
