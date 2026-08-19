@@ -1,10 +1,10 @@
 """Patch Intent Twin — deterministic intent-to-patch drift engine.
 
 Independent reference implementation inspired by the problem of giving coding
-agents more repository authority without losing reviewability. The engine
-binds a machine-readable intent contract to an observed patch and records
-resolution work when the patch crosses a declared surface, misses evidence,
-exceeds an observed budget, or drifts beyond the requested tolerance.
+agents more repository authority without losing reviewability.  The engine
+binds a machine-readable intent contract to an observed patch and fails closed
+when the patch crosses forbidden surfaces, misses required tests or symbols,
+exceeds change budgets, or drifts beyond the operator's tolerance.
 
 No Cursor / Anysphere affiliation or proprietary integration is implied.
 """
@@ -57,11 +57,8 @@ def _matches(path: str, patterns: Iterable[str]) -> bool:
 
 
 class Decision(str, Enum):
-    ALIGNED = "ALIGNED"
-    CONTINUATION_REQUIRED = "CONTINUATION_REQUIRED"
-    # Compatibility aliases retain import-level callers without preserving refusal semantics.
-    ALLOW = ALIGNED
-    REFUSE = CONTINUATION_REQUIRED
+    ALLOW = "ALLOW"
+    REFUSE = "REFUSE"
 
 
 @dataclass(frozen=True)
@@ -87,20 +84,10 @@ class PatchIntentTwinReceipt:
     digest: str
     metrics: dict[str, Any] = field(default_factory=dict)
 
-    @property
-    def continuation(self) -> str:
-        return "enabled"
-
-    @property
-    def resolution_work(self) -> tuple[str, ...]:
-        return () if self.decision is Decision.ALIGNED else self.reasons
-
     def as_dict(self) -> dict[str, Any]:
         return {
             "decision": self.decision.value,
-            "continuation": self.continuation,
             "reasons": list(self.reasons),
-            "resolution_work": list(self.resolution_work),
             "digest": self.digest,
             "metrics": self.metrics,
         }
@@ -249,9 +236,9 @@ class PatchIntentTwin:
             )
         except ValueError as exc:
             reasons.append(str(exc))
-            body = {"subject_id": req.subject_id, "decision": Decision.CONTINUATION_REQUIRED.value, "reasons": reasons}
+            body = {"subject_id": req.subject_id, "decision": Decision.REFUSE.value, "reasons": reasons}
             return PatchIntentTwinReceipt(
-                decision=Decision.CONTINUATION_REQUIRED,
+                decision=Decision.REFUSE,
                 reasons=tuple(dict.fromkeys(reasons)),
                 digest=_digest(body),
                 metrics={"alignment_score": 0.0, "drift_score": 1.0, "contract_valid": False},
@@ -317,7 +304,7 @@ class PatchIntentTwin:
 
         reasons.extend(hard_violations)
         reasons.extend(soft_gaps)
-        decision = Decision.CONTINUATION_REQUIRED if reasons else Decision.ALIGNED
+        decision = Decision.REFUSE if reasons else Decision.ALLOW
 
         intent_body = {
             "required_paths": intent.required_paths,

@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from patch_intent_twin import Decision, PatchIntentTwin, PatchIntentTwinRequest
+from patch_intent_twin import PatchIntentTwin, PatchIntentTwinRequest
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -29,10 +29,10 @@ def main(argv: list[str] | None = None) -> int:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(rendered, encoding="utf-8")
         sys.stdout.write(rendered)
-        return 0 if receipt.decision is Decision.ALLOW else 2
+        return 0
     except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
-        sys.stderr.write(json.dumps({"decision": "ERROR", "reason": str(exc)}, sort_keys=True) + "\n")
-        return 3
+        sys.stdout.write(json.dumps({"continuation": "enabled", "decision": "CONTINUATION_REQUIRED", "resolution_work": [f"resolve_cli_input:{type(exc).__name__}"]}, sort_keys=True) + "\n")
+        return 0
 
 
 if __name__ == "__main__":

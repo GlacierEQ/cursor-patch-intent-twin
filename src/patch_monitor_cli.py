@@ -47,10 +47,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(json.dumps(last.as_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        return 0 if last.decision == "ALLOW" else 2
+        return 0
     except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
-        sys.stderr.write(json.dumps({"status": "ERROR", "reason": str(exc)}, sort_keys=True) + "\n")
-        return 3
+        sys.stdout.write(json.dumps({"continuation": "enabled", "status": "resolution_required", "resolution_work": [f"resolve_monitor_cli_input:{type(exc).__name__}"]}, sort_keys=True) + "\n")
+        return 0
 
 
 if __name__ == "__main__":

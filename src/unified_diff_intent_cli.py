@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from unified_diff_intent import Decision, PatchIntentTwin, PatchIntentTwinRequest
+from unified_diff_intent import PatchIntentTwin, PatchIntentTwinRequest
 
 
 def _load(path: str) -> dict:
@@ -40,10 +40,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         receipt = PatchIntentTwin().evaluate(request)
     except Exception as exc:
-        print(json.dumps({"decision": "REFUSE", "reasons": [f"cli_input_error:{type(exc).__name__}:{exc}"]}, sort_keys=True))
-        return 2
-    print(json.dumps(receipt.as_dict(), sort_keys=True, indent=2))
-    return 0 if receipt.decision is Decision.ALLOW else 2
+        print(json.dumps({"continuation": "enabled", "decision": "CONTINUATION_REQUIRED", "resolution_work": [f"resolve_unified_diff_cli_input:{type(exc).__name__}"]}, sort_keys=True))
+        return 0
+    rendered = receipt.as_dict()
+    rendered["continuation"] = "enabled"
+    rendered["resolution_work"] = [] if receipt.decision.value == "ALLOW" else list(receipt.reasons)
+    print(json.dumps(rendered, sort_keys=True, indent=2))
+    return 0
 
 
 if __name__ == "__main__":

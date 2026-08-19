@@ -135,7 +135,7 @@ def test_incremental_monitor_surfaces_new_violation_and_caches_only_identical_ev
         budget=0.0,
     )
     assert first.changed is True
-    assert first.decision == "ALLOW"
+    assert first.decision == "ALIGNED"
     assert first.sequence == 1
 
     unchanged = monitor.check(
@@ -149,7 +149,7 @@ def test_incremental_monitor_surfaces_new_violation_and_caches_only_identical_ev
     )
     assert unchanged.changed is False
     assert unchanged.sequence == 1
-    assert unchanged.decision == "ALLOW"
+    assert unchanged.decision == "ALIGNED"
 
     changed_test_plan = monitor.check(
         repo=repo,
@@ -162,7 +162,7 @@ def test_incremental_monitor_surfaces_new_violation_and_caches_only_identical_ev
     )
     assert changed_test_plan.changed is True
     assert changed_test_plan.sequence == 2
-    assert changed_test_plan.decision == "REFUSE"
+    assert changed_test_plan.decision == "CONTINUATION_REQUIRED"
     assert "required_test_failed:unit" in changed_test_plan.introduced_reasons
 
     (repo / "infra" / "prod").mkdir(parents=True)
@@ -181,7 +181,7 @@ def test_incremental_monitor_surfaces_new_violation_and_caches_only_identical_ev
     )
     assert second.changed is True
     assert second.sequence == 3
-    assert second.decision == "REFUSE"
+    assert second.decision == "CONTINUATION_REQUIRED"
     assert "forbidden_path_touched:infra/prod/main.tf" in second.introduced_reasons
     assert "required_test_failed:unit" in second.cleared_reasons
     assert len(second.transition_digest) == 64
@@ -199,10 +199,10 @@ def test_monitor_re_evaluates_unchanged_patch_when_intent_changes(tmp_path: Path
     changed_intent = dict(recovered_contract())
     changed_intent["forbidden_paths"] = ["src/engine.py"]
     second = monitor.check(repo=repo, base_ref=base, head_ref=head, subject_id="task", intent=changed_intent, tests=tests)
-    assert first.decision == "ALLOW"
+    assert first.decision == "ALIGNED"
     assert second.changed is True
     assert second.sequence == 2
-    assert second.decision == "REFUSE"
+    assert second.decision == "CONTINUATION_REQUIRED"
     assert "forbidden_path_touched:src/engine.py" in second.introduced_reasons
 
 

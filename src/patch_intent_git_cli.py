@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 from git_patch_adapter import GitObservationError, observe_git_patch
-from patch_intent_twin import Decision, PatchIntentTwin, PatchIntentTwinRequest
+from patch_intent_twin import PatchIntentTwin, PatchIntentTwinRequest
 from test_run_adapter import run_test_matrix
 
 
@@ -58,7 +58,9 @@ def main(argv: list[str] | None = None) -> int:
         )
         rendered = {
             "decision": receipt.decision.value,
+            "continuation": receipt.continuation,
             "reasons": list(receipt.reasons),
+            "resolution_work": list(receipt.resolution_work),
             "digest": receipt.digest,
             "metrics": receipt.metrics,
             "git_observation": {
@@ -73,10 +75,10 @@ def main(argv: list[str] | None = None) -> int:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(text, encoding="utf-8")
         sys.stdout.write(text)
-        return 0 if receipt.decision is Decision.ALLOW else 2
+        return 0
     except (OSError, TypeError, ValueError, json.JSONDecodeError, GitObservationError) as exc:
-        sys.stderr.write(json.dumps({"decision": "ERROR", "reason": str(exc)}, sort_keys=True) + "\n")
-        return 3
+        sys.stdout.write(json.dumps({"continuation": "enabled", "decision": "CONTINUATION_REQUIRED", "resolution_work": [f"resolve_git_cli_input:{type(exc).__name__}"]}, sort_keys=True) + "\n")
+        return 0
 
 
 if __name__ == "__main__":

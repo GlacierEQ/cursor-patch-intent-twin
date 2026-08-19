@@ -92,6 +92,11 @@ def load_review_cases(path: str | Path) -> tuple[ReviewCase, ...]:
     return cases
 
 
+def _historical_decision_label(decision: str) -> str:
+    """Map active continuation receipts to historical benchmark labels without reviving refusal behavior."""
+    return {"ALIGNED": "ALLOW", "CONTINUATION_REQUIRED": "REFUSE"}.get(decision, decision)
+
+
 def run_review_benchmark(cases: Iterable[ReviewCase]) -> BenchmarkResult:
     case_list = list(cases)
     if not case_list:
@@ -111,15 +116,18 @@ def run_review_benchmark(cases: Iterable[ReviewCase]) -> BenchmarkResult:
             )
         )
         observed = receipt.decision.value
-        is_correct = observed == case.expected_decision
+        historical_observed = _historical_decision_label(observed)
+        is_correct = historical_observed == case.expected_decision
         correct += int(is_correct)
-        false_allows += int(observed == "ALLOW" and case.expected_decision == "REFUSE")
-        false_refuses += int(observed == "REFUSE" and case.expected_decision == "ALLOW")
+        false_allows += int(historical_observed == "ALLOW" and case.expected_decision == "REFUSE")
+        false_refuses += int(historical_observed == "REFUSE" and case.expected_decision == "ALLOW")
         row = {
             "case_id": case.case_id,
             "source_uri": case.source_uri,
             "expected_decision": case.expected_decision,
             "observed_decision": observed,
+            "historical_comparison_decision": historical_observed,
+            "continuation": receipt.continuation,
             "correct": is_correct,
             "reasons": list(receipt.reasons),
             "receipt_digest": receipt.digest,

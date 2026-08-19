@@ -27,7 +27,7 @@ def _digest(value: Any) -> str:
 
 def _git(repo: Path, *args: str, check: bool = True) -> str:
     proc = subprocess.run(
-        ["git", *args],
+        ["git", "-c", "color.ui=false", *args],
         cwd=str(repo),
         capture_output=True,
         text=True,
